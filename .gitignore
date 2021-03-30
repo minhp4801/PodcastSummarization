@@ -1,2 +1,4 @@
 /data/*
 !/data/data.zip
+.DS_Store
+!/data/podcasts-transcripts-summarization-testset.zip
