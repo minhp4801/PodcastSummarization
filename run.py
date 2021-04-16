@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     # Split the dataset into a 70/15/15 split. 
     # TODO: Change this to k-fold cross-validation!
-    split = random_split(dataset, [3956, 698, 698])
+    split = random_split(dataset, [3258, 698, 698])
 
     train_split = split[0]
     val_split = split[1]
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 def train(train_dataloader):
     # Run our model in training mode.
     model.train()
-    
+
     total_loss = 0
     total_preds = []
 
