@@ -1,9 +1,10 @@
 import os
+import random
 import torch
 import pandas as pd
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
-
+from sklearn.model_selection import train_test_split, KFold
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -24,10 +25,7 @@ class SpotifyPodcastDataset(Dataset):
         # Set up our directory of podcast transcripts.
         self.corpora_dir = config['data']['corpora_dir']
 
-        # Get our list of episode enumerations.
-        with open(config['data']['episodes'], 'r') as f:
-            self.episodes = [episode.strip('\n') for episode in f.readlines()]
-
+        
         # Initialize our pretrained tokenizer. 
         self.tokenizer = AutoTokenizer.from_pretrained(config['network']['tokenizer'])
         
@@ -72,4 +70,3 @@ class SpotifyPodcastDataset(Dataset):
         sample = {'input_ids': seq, 'attention_mask': mask, 'score': score}
 
         return sample
-

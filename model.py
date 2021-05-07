@@ -1,23 +1,22 @@
 import torch
 import pandas as pd
 from transformers import AutoModel
-
 import warnings
 warnings.filterwarnings('ignore')
 import torch.nn as nn
 
 class BERT_FineTune(nn.Module):
-    def __init__(self, bert):
+    def __init__(self, config):
 
         super(BERT_FineTune, self).__init__()
 
         # Load the pretrained bert.
-        self.bert = bert
+        self.bert = AutoModel.from_pretrained(config['network']['finetune_base'])
 
         # These layers are the ones we are adding.
-        self.dropout = nn.Dropout(0.1)
+        self.fc1 = nn.Linear(1024, 512)
         self.relu = nn.ReLU()
-        self.fc1 = nn.Linear(768, 512)
+        self.dropout = nn.Dropout(0.1)
         self.fc2 = nn.Linear(512, 4)
         self.softmax = nn.LogSoftmax(dim=1)
 
