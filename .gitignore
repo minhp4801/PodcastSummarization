@@ -3,3 +3,5 @@
 .DS_Store
 !/data/podcast_transcripts.zip
 !/data/podcast_transcripts/
+!/data/episodes.txt
+!/data/RatedSummaryComprehensive.csv

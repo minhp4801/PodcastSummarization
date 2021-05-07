@@ -1,34 +1,43 @@
 import os
 import torch
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader, random_split
-from transformers import AutoTokenizer 
+from torch.utils.data import Dataset
+from transformers import AutoTokenizer
 
 import warnings
 warnings.filterwarnings('ignore')
 
 class SpotifyPodcastDataset(Dataset):
-    """Spotify Podcast dataset."""
+    def __init__(self, config, classes):
+        '''
+        config (dict): A parsed YAML file containing program configuration.
+        classes (list): A list of classes that will be included as part of this dataset.
+        '''
+        # Set our summary / corpus input token split.
+        self.summary_token_len = config['data']['summary_tokens']
+        self.corpus_token_len = config['data']['input_max'] - self.summary_token_len
 
-    def __init__(self, csv_file, root_dir, tokenizer):
-        """
-        Args:
-            csv_file (string): Path to the csv file with the summaries.
-            root_dir (string): Directory with all the corpora.
-            tokenizer (string): The BERT tokenizer model we will use.
-        """
-        self.summary_with_scores = pd.read_csv(csv_file)
-        self.root_dir = root_dir
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
+        # Load the CSV with the specified summaries and their scores.
+        df = pd.read_csv(config['data']['summary_with_scores'])
+        self.summary_with_scores = df[df.Number.isin(classes)].reset_index(drop=True)
 
+        # Set up our directory of podcast transcripts.
+        self.corpora_dir = config['data']['corpora_dir']
+
+        # Get our list of episode enumerations.
+        with open(config['data']['episodes'], 'r') as f:
+            self.episodes = [episode.strip('\n') for episode in f.readlines()]
+
+        # Initialize our pretrained tokenizer. 
+        self.tokenizer = AutoTokenizer.from_pretrained(config['network']['tokenizer'])
+        
     def __len__(self):
         return len(self.summary_with_scores)
-
+    
     def __getitem__(self, idx):
-        """
-        Args:
-            idx (int, list, or tensor): The indices of the dataset to choose.
-        """
+        '''
+        idx (int, list, or tensor): The specific index / indices to return.
+        '''
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
@@ -36,25 +45,31 @@ class SpotifyPodcastDataset(Dataset):
         summary = self.summary_with_scores.iloc[idx, 1]
         score = self.summary_with_scores.iloc[idx, 2]
 
-        # Extract the corpus from the text file that corresponds to the summary.
+        # Get our summary tokens, limiting the max length to what is speficied in the config file.
+        # We include special tokens [CLS] and [SEP] here for compliance with BERT's input.
+        summary_tokens = self.tokenizer(summary, max_length=self.summary_token_len, padding='max_length', truncation=True)
+
+
+        # Extract the associated corpus as a string. 
         corpus_name = os.path.join(
-            self.root_dir, 
+            self.corpora_dir, 
             self.summary_with_scores.iloc[idx, 0] + '.txt'
         )
+        with open(corpus_name, 'r', encoding='latin-1') as f:
+            corpus = f.read()
 
-        corpus_file = open(corpus_name, 'r', encoding='latin-1')
-        corpus = corpus_file.read()
-        corpus_file.close()
+        # Get our corpus tokens. We do not need the special tokens here since we will append these 
+        # tokens to the summary tokens.
+        corpus_tokens = self.tokenizer(corpus, max_length=self.corpus_token_len, padding='max_length', truncation=True, add_special_tokens=False)
 
-        # Create our input to the tokenizer using [SEP].
-        text = summary + '[SEP]' + corpus
 
-        # Get our tokenized string, truncating at 1024 to comply with BERT-large's input size.
-        tokenized_string = self.tokenizer(text, max_length=1024, padding='max_length', truncation=True)
-        seq = torch.tensor(tokenized_string['input_ids'])
-        mask = torch.tensor(tokenized_string['attention_mask'])
+        # Combine the summary and corpus tokens. The resulting tokens should be in the format:
+        # '[CLS] <Summary> [SEP] <Corpus>' 
+        seq = torch.tensor(summary_tokens['input_ids'] + corpus_tokens['input_ids'])
+        mask = torch.tensor(summary_tokens['attention_mask'] + corpus_tokens['attention_mask'])
 
-        # Create our data sample with a dictionary that consists of everything that will be passed to the network.
+        # Create our sample dictionary that has everything our network needs for training / testing.
         sample = {'input_ids': seq, 'attention_mask': mask, 'score': score}
 
         return sample
+
