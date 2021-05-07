@@ -5,3 +5,5 @@
 !/data/podcast_transcripts/
 !/data/episodes.txt
 !/data/RatedSummaryComprehensive.csv
+/checkpoints/*
+/results/*

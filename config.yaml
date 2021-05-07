@@ -11,9 +11,9 @@ data:
 network:
   tokenizer: 'bert-large-uncased'
   finetune_base: 'bert-large-uncased'
-  epochs: 5
+  epochs: 3
   batch_size: 8
   fc1_out: 512
   dropout: 0.1
-
-
+  adam_lr: 0.00001
+device: "cuda"
