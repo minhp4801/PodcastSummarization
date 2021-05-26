@@ -1,8 +1,8 @@
 dataset:
-  script_path: ../data/dataloader.py
-  corpora_dir: ../data/podcast_transcripts/
-  podcast_names: ../data/episodes.txt
-  summary_with_scores: ../data/RatedSummaryComprehensive.csv
+  script_path: ./data/dataloader.py
+  corpora_dir: ./data/podcast_transcripts/
+  podcast_names: ./data/episodes.txt
+  summary_with_scores: ./data/RatedSummaryComprehensive.csv
   input_max: 1024
   train_classes: 10
   k-folds: 5

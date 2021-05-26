@@ -12,7 +12,7 @@ def main(yaml_filepath):
 
     config = load_config(yaml_filepath)
 
-    tokenizer = AutoTokenizer.from_pretrained(config['network']['bert-large-uncased'])
+    tokenizer = AutoTokenizer.from_pretrained(config['network']['tokenizer'])
 
     summary_len = get_summary_length(config, tokenizer)
 
@@ -31,7 +31,7 @@ def main(yaml_filepath):
         valid_sampler = SequentialSampler(valid_set)
         valid_dataloader = DataLoader(valid_set, sampler=valid_sampler, batch_size=config['network']['batch_size'])
 
-        train(config, device, train_dataloader, valid_dataloader)
+        train_model(config, device, train_dataloader, valid_dataloader)
     
 def load_config(yaml_filepath):
     """
@@ -67,7 +67,7 @@ def get_parser():
 
     return parser
 
-def train(config, device, train_dataloader, val_dataloader):
+def train_model(config, device, train_dataloader, val_dataloader):
     model = BertForSequenceClassification.from_pretrained(
         config['network']['finetune_base'],
         num_labels=4,
