@@ -5,7 +5,7 @@ import yaml
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from torch.utils.data import RandomSampler, SequentialSampler, DataLoader
 from data.dataloader import *
-from transformers import AutoTokenizer, BertForSequenceClassification, AdamW, get_linear_scheduler_with_warmup
+from transformers import AutoTokenizer, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 
 def main(yaml_filepath):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -81,7 +81,7 @@ def train(config, device, train_dataloader, val_dataloader):
 
     total_steps = len(train_dataloader) * config['network']['epochs']
 
-    scheduler = get_linear_scheduler_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
     for epoch in range(config['network']['epochs']):
         t0 = time.time()
