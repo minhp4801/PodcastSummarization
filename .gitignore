@@ -1,2 +1,8 @@
-/output/train/*
-/output/test/*
+CSVs/*
+data/*
+!data/podcast_transcripts/
+!data/*.py
+!data/RatedSummaryComprehensive.csv 
+!data/episodes.txt
+checkpoints/*
+results/*
