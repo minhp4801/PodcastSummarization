@@ -8,6 +8,22 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def generate_splits(config):
+    """
+    Partitions the dataset into the the k-fold train/validation set and the 
+    leave-out test set. The indices of the train and validation sets for each
+    iteration of k-fold is also returned.
+
+    Parameters
+    ----------
+    config : dict
+
+    Returns
+    -------
+    kfold_split : list (String)
+    train_splits : list (int)
+    val_splits : list (int)
+    test_split : list (String)
+    """
     with open(config['dataset']['podcast_names'], 'r') as f:
         episodes = [episode.strip('\n') for episode in f.readlines()]
     
