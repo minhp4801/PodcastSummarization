@@ -1,9 +1,2 @@
-/data/*
-!/data/data.zip
-.DS_Store
-!/data/podcast_transcripts.zip
-!/data/podcast_transcripts/
-!/data/episodes.txt
-!/data/RatedSummaryComprehensive.csv
-/checkpoints/*
-/results/*
+/output/train/*
+/output/test/*
