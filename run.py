@@ -2,6 +2,7 @@ import time
 import datetime
 import numpy as np
 import yaml
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from torch.utils.data import RandomSampler, SequentialSampler, DataLoader
 from data.dataloader import *
 from transformers import AutoTokenizer, BertForSequenceClassification, AdamW, get_linear_scheduler_with_warmup
@@ -51,7 +52,7 @@ def load_config(yaml_filepath):
     return config
 
 def get_parser():
-    from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+    
 
     parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 
