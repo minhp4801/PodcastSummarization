@@ -69,7 +69,7 @@ def get_parser():
     return parser
 
 def train_model(config, device, train_dataloader, val_dataloader):
-    model = AutoModelForSequenceClassification.from_pretrained(
+    model = BertForSequenceClassification.from_pretrained(
         config['network']['finetune_base'],
         num_labels=config['dataset']['labels'],
         output_attention=False,
