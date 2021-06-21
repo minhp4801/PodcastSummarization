@@ -8,11 +8,9 @@ dataset:
   k-folds: 5
   labels: 4
 network:
-  name: 'barebones-test'
   batch_size: 8
   epochs: 2
   tokenizer: 'bert-large-uncased'
   finetune_base: 'bert-large-uncased'
-  optim_lr: 1.0e-5
-  optim_epsilon: 1.0e-6
+
 
