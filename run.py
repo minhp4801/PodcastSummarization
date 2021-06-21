@@ -101,7 +101,7 @@ def train_model(config, device, train_dataloader, val_dataloader):
             model.zero_grad()
 
             output = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
-            print(output)
+            loss = output[0]
             total_train_loss += loss.item()
 
             loss.backward()
@@ -139,8 +139,10 @@ def train_model(config, device, train_dataloader, val_dataloader):
             b_labels = batch['score'].to(device)
 
             with torch.no_grad():
-                (loss, logits) = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+                output = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
             
+            loss = output[0]
+            logits = output[1]
             total_eval_loss += loss.item()
 
             logits = logits.detach().cpu().numpy()
