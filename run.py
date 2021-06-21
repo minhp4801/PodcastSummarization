@@ -85,8 +85,12 @@ def train_model(config, device, train_dataloader, val_dataloader):
     scheduler = get_linear_schedule_with_warmup(optimizer, 
                                                 num_warmup_steps=0, 
                                                 num_training_steps=total_steps)
-
+    print("")
+    print("Running Validation...")
     for epoch in range(config['network']['epochs']):
+        print("")
+        print(f"Starting epoch {epoch}...")
+        
         t0 = time.time()
 
         total_train_loss = 0
@@ -120,7 +124,7 @@ def train_model(config, device, train_dataloader, val_dataloader):
 
         print("")
         print("  Saving checkpoint of model...")
-        torch.save(model.state_dict(), f"checkpoints/{config['network']['name']}_epoch_{epoch}.model")
+        torch.save(model.state_dict(), f"./checkpoints/{config['network']['name']}_epoch_{epoch}.model")
         
         print("")
         print("Running Validation...")
@@ -149,6 +153,9 @@ def train_model(config, device, train_dataloader, val_dataloader):
             label_ids = b_labels.cpu().numpy()
             predictions.append(logits)
             true_vals.append(label_ids)
+        
+        predictions = np.concatenate(predictions, axis=0)
+        true_vals = np.concatenate(true_vals, axis=0)
 
         val_f1 = f1_score_func(predictions, true_vals)
         avg_val_loss = total_eval_loss / len(val_dataloader)
@@ -196,6 +203,9 @@ def test(config, device, test_dataloader, model_checkpoint):
         predictions.append(logits)
         true_vals.append(label_ids)
     
+    predictions = np.concatenate(predictions, axis=0)
+    true_vals = np.concatenate(true_vals, axis=0)
+
     test_f1 = f1_score_func(predictions, true_vals)
 
     print("")
