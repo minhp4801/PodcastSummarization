@@ -4,12 +4,12 @@ dataset:
   podcast_names: ./data/episodes.txt
   summary_with_scores: ./data/RatedSummaryComprehensive.csv
   input_max: 512
-  train_classes: 10
+  train_classes: 5
   k-folds: 5
   labels: 4
 network:
   name: 'barebones-test'
-  batch_size: 8
+  batch_size: 1
   epochs: 2
   tokenizer: 'bert-large-uncased'
   finetune_base: 'bert-large-uncased'
