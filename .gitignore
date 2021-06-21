@@ -4,5 +4,4 @@ data/*
 !data/*.py
 !data/RatedSummaryComprehensive.csv 
 !data/episodes.txt
-checkpoints/*
 results/*
