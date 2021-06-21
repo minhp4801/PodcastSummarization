@@ -8,22 +8,24 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def generate_splits(config):
+    """Partitions the dataset into the the k-fold train/validation set and the 
+    leave-out test set. 
+    
+    Args:
+        config: 
+            A dict containing the network and dataset configuration details for this experiment.
+    Returns:
+        kfold_split:
+            A list of the portion of the dataset that has been set aside for training / validation.
+        train_splits:
+            A list of lists that indicates the indices of kfold_split which are for training, at each iteration.
+        val_splits:
+            A list of list that indicates the indices of kfold_split which are for validation, at each iteration.
+        test_split:
+            A list of the leave-out portion of the dataset, only used for final testing after we've considered
+            several models.
     """
-    Partitions the dataset into the the k-fold train/validation set and the 
-    leave-out test set. The indices of the train and validation sets for each
-    iteration of k-fold is also returned.
 
-    Parameters
-    ----------
-    config : dict
-
-    Returns
-    -------
-    kfold_split : list (String)
-    train_splits : list (int)
-    val_splits : list (int)
-    test_split : list (String)
-    """
     with open(config['dataset']['podcast_names'], 'r') as f:
         episodes = [episode.strip('\n') for episode in f.readlines()]
     
@@ -41,7 +43,24 @@ def generate_splits(config):
     return kfold_split, train_splits, val_splits, test_split
 
 def get_summary_length(config, tokenizer):
+    """Determine the 95th percentile of summary token lengths. This is to mitigate the 
+    chances of a very long summary dominating the input to BERT (leaving no room for the
+    source text).
 
+    Args:
+        config: 
+            A dict containing the network and dataset configuration details for this experiment.
+        tokenizer:
+            A preinitialized BERT tokenizer that we will be using to determine the number of 
+            tokens a summary has.
+    Returns:
+        summary_len:
+            An integer that serves as the maximum length for our first sentence in our BERT input.
+            For example, if our model's maximum input was 10, and we determine the max summary
+            length to be 3, our input would look something like:
+            
+            [CLS] <3 tokens> [SEP] <5 tokens>
+    """
     df = pd.read_csv(config['dataset']['summary_with_scores'])
 
     lengths = []
@@ -59,17 +78,43 @@ def get_summary_length(config, tokenizer):
     return int(summary_len)
 
 class SpotifyPodcastDataset(Dataset):
+    """A custom dataset class that will allow us to set the sentence pair split in BERT.
+    
+    Set up mainly to work with the transcripts of the Spotify 100,000 Podcast dataset.
+
+    Attributes:
+        summary_token_len:
+            The maximum length of our summary. We subtract 2 to account for the special 
+            tokens [CLS] and [SEP].
+        corpus_token_len:
+            The maximum length of our corpus. This is determined by subtracting 
+        summary_with_scores:
+            A pandas dataframe containing both the summaries and their associated scores.
+        corpora_dir:
+            The directory where all the podcast transcripts are.
+        tokenizer:
+            The tokenizer we will use for generating our tokens.
+    """
+
     def __init__(self, config, tokenizer, classes, summary_token_len):
-        '''
-        config (dict): A parsed YAML file containing program configuration.
-        tokenizer (modelf): The pretrained tokenizer that we will be using to tokenize the strings.
-        classes (list): A list of classes that will be included as part of this dataset.
-        summary_token_len (int): The chosen length that the summaries will be truncated / padded to.
-        '''
+        """
+
+        Args:
+            config: 
+                A dict containing the network and dataset configuration details for this experiment.
+            tokenizer:
+                A preinitialized tokenizer for generating tokens.
+            classes:
+                A list of the names associated with the classes. Makes finding the corpus file easier.
+            summary_token_len:
+                The 95th percentile of summary token lengths. Determines where we separate 
+                summaries and corpora. 
+        """
         
-        # Set our summary / corpus input token split.
+        # Set our summary / corpus input token split. Subtract 2 from summary_token_len to account
+        # for the special characters [CLS] and [SEP].
         self.summary_token_len = summary_token_len - 2
-        self.corpus_token_len = config['dataset']['input_max'] - self.summary_token_len
+        self.corpus_token_len = config['dataset']['input_max'] - summary_token_len
 
         # Load the CSV with the specified summaries and their scores.
         df = pd.read_csv(config['dataset']['summary_with_scores'])
@@ -85,9 +130,9 @@ class SpotifyPodcastDataset(Dataset):
         return len(self.summary_with_scores)
     
     def __getitem__(self, idx):
-        '''
-        idx (int, list, or tensor): The specific index / indices to return.
-        '''
+        """Slight modification to the typical __getitem__, we have to manually set the
+        separation between summary and corpus.
+        """
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
