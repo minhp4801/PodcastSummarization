@@ -19,6 +19,7 @@ def main(yaml_filepath):
 
     kfold_split, train_splits, valid_splits, test_split = generate_splits(config)
 
+    f1_scores = []
     for i in range(len(train_splits)):
         train = [kfold_split[j] for j in train_splits[i]]
         valid = [kfold_split[j] for j in valid_splits[i]]
@@ -32,7 +33,11 @@ def main(yaml_filepath):
         valid_sampler = SequentialSampler(valid_set)
         valid_dataloader = DataLoader(valid_set, sampler=valid_sampler, batch_size=config['network']['batch_size'])
 
-        train_model(config, device, train_dataloader, valid_dataloader)
+        valid_f1 = train_model(config, device, train_dataloader, valid_dataloader)
+        f1_scores.append(valid_f1)
+
+    print("")
+    print(f"  Average F1 Score for configuration {config['network']['name']}: {np.mean(f1_scores)}")
     
 def load_config(yaml_filepath):
     """
@@ -166,6 +171,8 @@ def train_model(config, device, train_dataloader, val_dataloader):
 
     print("")
     print("Training complete!")
+
+    return val_f1
 
 def test(config, device, test_dataloader, model_checkpoint):
 
