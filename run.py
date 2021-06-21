@@ -5,7 +5,8 @@ import yaml
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from torch.utils.data import RandomSampler, SequentialSampler, DataLoader
 from data.dataloader import *
-from transformers import AutoTokenizer, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
+from sklearn.metrics import f1_score
 
 def main(yaml_filepath):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -68,11 +69,11 @@ def get_parser():
     return parser
 
 def train_model(config, device, train_dataloader, val_dataloader):
-    model = BertForSequenceClassification.from_pretrained(
+    model = AutoModelForSequenceClassification.from_pretrained(
         config['network']['finetune_base'],
-        num_labels=4,
-        output_attentions=False,
-        output_hidden_states=False,
+        num_labels=config['dataset']['labels'],
+        output_attention=False,
+        output_hidden_states=False
     )
 
     model.cuda()
@@ -81,7 +82,9 @@ def train_model(config, device, train_dataloader, val_dataloader):
 
     total_steps = len(train_dataloader) * config['network']['epochs']
 
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+    scheduler = get_linear_schedule_with_warmup(optimizer, 
+                                                num_warmup_steps=0, 
+                                                num_training_steps=total_steps)
 
     for epoch in range(config['network']['epochs']):
         t0 = time.time()
@@ -97,7 +100,7 @@ def train_model(config, device, train_dataloader, val_dataloader):
 
             model.zero_grad()
 
-            loss, logits = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+            loss, _ = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
 
             total_train_loss += loss.item()
 
@@ -109,21 +112,26 @@ def train_model(config, device, train_dataloader, val_dataloader):
             scheduler.step()
         
         avg_train_loss = total_train_loss / len(train_dataloader)
-
+        
         training_time = format_time(time.time() - t0)
         print("")
         print("  Average training loss: {0:.2f}".format(avg_train_loss))
         print("  Training epoch took: {:}".format(training_time))
 
         print("")
+        print("  Saving checkpoint of model...")
+        torch.save(model.state_dict(), f"checkpoints/{config['network']['name']}_epoch_{epoch}.model")
+        
+        print("")
         print("Running Validation...")
         
         t0 = time.time()
         model.eval()
 
-        total_eval_accuracy = 0
+
         total_eval_loss = 0
-        nb_eval_steps = 0
+        predictions = []
+        true_vals = []
 
         for batch in val_dataloader:
             b_input_ids = batch['input_ids'].to(device)
@@ -136,23 +144,40 @@ def train_model(config, device, train_dataloader, val_dataloader):
             total_eval_loss += loss.item()
 
             logits = logits.detach().cpu().numpy()
-            label_ids = b_labels.to('cpu').numpy()
+            label_ids = b_labels.cpu().numpy()
+            predictions.append(logits)
+            true_vals.append(label_ids)
 
-            total_eval_accuracy += flat_accuracy(logits, label_ids)
-
-        avg_val_accuracy = total_eval_accuracy / len(val_dataloader)
+        val_f1 = f1_score_func(predictions, true_vals)
         avg_val_loss = total_eval_loss / len(val_dataloader)
         validation_time = format_time(time.time() - t0)
-        print("  Accuracy: {0:.2f}".format(avg_val_accuracy))
-        print("  Average Valid. Loss: {0:.2f}".format(avg_val_accuracy))
+        print("  F1 Score (Weighted): {0:.2f}".format(val_f1))
+        print("  Average Valid. Loss: {0:.2f}".format(avg_val_loss))
         print("  Validation took: {:}".format(validation_time))
 
     print("")
     print("Training complete!")
 
-'''
-def test(config, device, test_dataloader):
-    model.eval()
+def test(config, device, test_dataloader, model_checkpoint):
+
+    print("")
+    print("Beginning testing...")
+
+    model = BertForSequenceClassification.from_pretrained(
+        config['network']['finetune_base'],
+        num_labels=config['dataset']['labels'],
+        output_attention=False,
+        output_hidden_states=False
+    )
+
+    model.to(device)
+
+    model.load_state_dict(torch.load(model_checkpoint, map_location=torch.device('cpu')))
+    
+    # After loading model, start evaluation.
+    total_eval_loss = 0
+    predictions = []
+    true_vals = []
 
     for batch in test_dataloader:
         b_input_ids = batch['input_ids'].to(device)
@@ -160,20 +185,25 @@ def test(config, device, test_dataloader):
         b_labels = batch['score'].to(device)
 
         with torch.no_grad():
-            _, logits = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+            (loss, logits) = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
         
-        logits.detach().cpu().numpy()
-        label_ids = b_labels.to('cpu').numpy()
+        total_eval_loss += loss.item()
 
+        logits = logits.detach().cpu().numpy()
+        label_ids = b_labels.cpu().numpy()
         predictions.append(logits)
-        true_labels.append(label_ids)
-'''
+        true_vals.append(label_ids)
+    
+    test_f1 = f1_score_func(predictions, true_vals)
+
+    print("")
+    print("  F1 Score (Weighted): {0:.2f}".format(test_f1))
 
 # Function to calculate the accuracy of our predictions vs labels
-def flat_accuracy(preds, labels):
+def f1_score_func(preds, labels):
     pred_flat = np.argmax(preds, axis=1).flatten()
     labels_flat = labels.flatten()
-    return np.sum(pred_flat == labels_flat) / len(labels_flat)
+    return f1_score(labels_flat, pred_flat, average='weighted')
 
 def format_time(elapsed):
     elapsed_rounded = int(round(elapsed))

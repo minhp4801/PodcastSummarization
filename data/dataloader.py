@@ -68,8 +68,8 @@ class SpotifyPodcastDataset(Dataset):
         '''
         
         # Set our summary / corpus input token split.
-        self.summary_token_len = summary_token_len
-        self.corpus_token_len = config['dataset']['input_max'] - self.summary_token_len - 2
+        self.summary_token_len = summary_token_len - 2
+        self.corpus_token_len = config['dataset']['input_max'] - self.summary_token_len
 
         # Load the CSV with the specified summaries and their scores.
         df = pd.read_csv(config['dataset']['summary_with_scores'])
