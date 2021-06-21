@@ -5,7 +5,7 @@ import yaml
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from torch.utils.data import RandomSampler, SequentialSampler, DataLoader
 from data.dataloader import *
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 from sklearn.metrics import f1_score
 
 def main(yaml_filepath):
@@ -69,10 +69,10 @@ def get_parser():
     return parser
 
 def train_model(config, device, train_dataloader, val_dataloader):
-    model = AutoModelForSequenceClassification.from_pretrained(
+    model = BertForSequenceClassification.from_pretrained(
         config['network']['finetune_base'],
         num_labels=config['dataset']['labels'],
-        output_attention=False,
+        output_attentions=False,
         output_hidden_states=False
     )
 
@@ -166,7 +166,7 @@ def test(config, device, test_dataloader, model_checkpoint):
     model = BertForSequenceClassification.from_pretrained(
         config['network']['finetune_base'],
         num_labels=config['dataset']['labels'],
-        output_attention=False,
+        output_attentions=False,
         output_hidden_states=False
     )
 
