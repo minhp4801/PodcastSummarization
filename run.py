@@ -100,7 +100,7 @@ def train_model(config, device, train_dataloader, val_dataloader):
 
             model.zero_grad()
 
-            loss, _ = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+            (loss, logits) = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
 
             total_train_loss += loss.item()
 
