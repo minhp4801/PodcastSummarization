@@ -1,0 +1,18 @@
+dataset:
+  script_path: ./data/dataloader.py
+  corpora_dir: ./data/podcast_transcripts/
+  podcast_names: ./data/episodes.txt
+  summary_with_scores: ./data/RatedSummaryComprehensive.csv
+  input_max: 512
+  train_classes: 5
+  k-folds: 5
+  labels: 4
+network:
+  name: 'barebones-test'
+  batch_size: 1
+  epochs: 2
+  tokenizer: 'bert-large-uncased'
+  finetune_base: 'bert-large-uncased'
+  optim_lr: 1.0e-5
+  optim_epsilon: 1.0e-6
+
